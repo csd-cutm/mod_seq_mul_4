@@ -6,6 +6,37 @@
 `default_nettype none
 
 
+module tt_um_seq_mul (
+    input clk,
+    input rst_n,
+    input  [7:0] ui_in,     // a[3:0] = ui_in[3:0], b[3:0] = ui_in[7:4]
+    output [7:0] uo_out,    // output from seq_mul
+    input  [7:0] uio_in,    // uio_in[0] used for 'start'
+    output [7:0] uio_out,   // unused
+    output [7:0] uio_oe     // unused
+);
+
+    wire [3:0] a = ui_in[3:0];
+    wire [3:0] b = ui_in[7:4];
+    wire start = uio_in[0];
+    wire [7:0] op;
+
+    assign uo_out = op;
+    assign uio_out = 8'b0;
+    assign uio_oe  = 8'b0;
+
+    seq_mul uut (
+        .clk(clk),
+        .start(start),
+        .a(a),
+        .b(b),
+        .op(op)
+    );
+
+endmodule
+
+// Original Sequential Multiplier and Submodules
+
 module seq_mul(clk, start, a, b, op);
     input [3:0] a, b;
     input clk, start;
@@ -25,9 +56,7 @@ module seq_mul(clk, start, a, b, op);
     assign t[3] = a1[3] & p[0];
 
     adder_4bit ad(p[8:5], t, c, cy);
-
     Regbank_4bit rg2(clk, start, ld, cy, c, b, p);
-
     cnt4 cnt(out, 2'b00, load, en, clk, tc, 2'b11);
     pg pg1(start, tc, en, clk, 1'b0);
 
@@ -91,7 +120,6 @@ module Regbank_4bit(clk, start, ld, cy, c, b, p);
     wire en2;
 
     fdce f1(p[8], clk, ld, cy);
-
     fdce d1(p[7], clk, ld, c[3]);
     fdce d2(p[6], clk, ld, c[2]);
     fdce d3(p[5], clk, ld, c[1]);
@@ -161,3 +189,4 @@ module DFF(q, clk, reset, d);
             q <= d;
     end
 endmodule
+
