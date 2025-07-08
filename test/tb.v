@@ -33,7 +33,7 @@ module tb ();
       .clk    (clk),
       .rst_n  (rst_n)
   );
-
+ 
   // Clock generation (10us period => 100KHz)
   always #5 clk = ~clk;
 
