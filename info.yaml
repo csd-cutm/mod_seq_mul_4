@@ -25,15 +25,15 @@ pinout:
   # Inputs
   ui[0]: "a"
   ui[1]: "b"
-  ui[2]: ""
-  ui[3]: ""
+  ui[2]: "clk"
+  ui[3]: "start"
   ui[4]: ""
   ui[5]: ""
   ui[6]: ""
   ui[7]: ""
 
   # Outputs
-  uo[0]: ""
+  uo[0]: "op"
   uo[1]: ""
   uo[2]: ""
   uo[3]: ""
