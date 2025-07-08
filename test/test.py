@@ -11,12 +11,11 @@ import random
 async def test_project(dut):
     dut._log.info("Start test")
 
-    # Start 100 KHz clock (10 us period)
+    # Set clock
     clock = Clock(dut.clk, 10, units="us")
     cocotb.start_soon(clock.start())
 
     # Apply reset
-    dut.ena.value = 1
     dut.ui_in.value = 0
     dut.uio_in.value = 0
     dut.rst_n.value = 0
@@ -24,27 +23,23 @@ async def test_project(dut):
     dut.rst_n.value = 1
     await ClockCycles(dut.clk, 1)
 
-    # Run multiple random tests
+    # Run multiple tests
     for _ in range(5):
         a = random.randint(0, 15)
         b = random.randint(0, 15)
         expected = a * b
 
-        # Set inputs
-        dut.ui_in.value = (b << 4) | a  # ui_in[7:4]=b, ui_in[3:0]=a
-        dut.uio_in.value = 1            # start pulse
-        dut._log.info(f"Inputs: a={a}, b={b}, start=1")
+        dut.ui_in.value = (b << 4) | a  # ui_in = {b[3:0], a[3:0]}
+        dut.uio_in.value = 1            # start = 1
+        dut._log.info(f"Test: a={a}, b={b}, expected={expected}")
 
-        # Wait for start to be latched
         await ClockCycles(dut.clk, 1)
-        dut.uio_in.value = 0            # deassert start
+        dut.uio_in.value = 0
 
-        # Wait enough cycles for operation to finish
-        await ClockCycles(dut.clk, 20)
+        await ClockCycles(dut.clk, 20)  # Wait for operation
 
         result = dut.uo_out.value.integer
-        dut._log.info(f"Output: {result}, Expected: {expected}")
-
-        assert result == expected, f"FAILED: a={a}, b={b} => got {result}, expected {expected}"
+        assert result == expected, f"FAILED: a={a}, b={b}, got {result}, expected {expected}"
+        dut._log.info(f"PASSED: result={result}")
 
     dut._log.info("All test cases passed.")
