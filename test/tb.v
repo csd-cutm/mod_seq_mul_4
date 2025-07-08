@@ -4,71 +4,69 @@
 /* This testbench just instantiates the module and makes some convenient wires
    that can be driven / tested by the cocotb test.py.
 */
+// SPDX-FileCopyrightText: © 2024 Tiny Tapeout
+// SPDX-License-Identifier: Apache-2.0
 
-`timescale 1ns/1ps
 
 module tb;
 
-    reg [7:0] ui_in;     // ui_in[3:0] = a, ui_in[7:4] = b
-    reg [7:0] uio_in;    // uio_in[0] = start
-    reg clk;
-    reg rst_n;
+  reg clk = 0;
+  reg rst_n = 0;
+  reg [7:0] ui_in;     // a[3:0], b[3:0]
+  reg [7:0] uio_in;    // start
+  wire [7:0] uo_out;
 
-    wire [7:0] uo_out;   // output: op
-    wire [7:0] uio_out;
-    wire [7:0] uio_oe;
+  wire [7:0] uio_out;
+  wire [7:0] uio_oe;
 
-    // Instantiate the design
-    tt_um_seq_mul dut (
-        .ui_in(ui_in),
-        .uo_out(uo_out),
-        .uio_in(uio_in),
-        .uio_out(uio_out),
-        .uio_oe(uio_oe),
-        .clk(clk),
-        .rst_n(rst_n)
-    );
+  tt_um_seq_mul dut (
+    .clk(clk),
+    .rst_n(rst_n),
+    .ui_in(ui_in),
+    .uio_in(uio_in),
+    .uo_out(uo_out),
+    .uio_out(uio_out),
+    .uio_oe(uio_oe)
+  );
 
-    // Clock generation
-    initial clk = 0;
-    always #5 clk = ~clk; // 100MHz clock
+  // Generate clock
+  always #5 clk = ~clk;
 
-    // Simulation control
-    initial begin
-        $dumpfile("tb.vcd");
-        $dumpvars(0, tb);
+  initial begin
+    $dumpfile("tb.vcd");
+    $dumpvars(0, tb);
 
-        // Initial values
-        clk     = 0;
-        rst_n   = 0;
-        ui_in   = 8'b0;
-        uio_in  = 8'b0;
+    #10;
+    rst_n = 1;
 
-        // Reset
-        #20;
-        rst_n = 1;
+    test(3, 4, 12);
+    test(5, 5, 25);
+    test(9, 4, 36);
+    test(15, 15, 225);
+    test(0, 14, 0);
 
-        // Test 1: a = 3, b = 4 (3*4 = 12)
-        ui_in[3:0] = 4'd3;   // a = 3
-        ui_in[7:4] = 4'd4;   // b = 4
-        uio_in[0]  = 1'b1;   // start pulse
+    #100;
+    $finish;
+  end
 
-        #10;
-        uio_in[0] = 1'b0;    // de-assert start
+  task test(input [3:0] a, input [3:0] b, input [7:0] expected);
+    begin
+      ui_in = {b, a};
+      uio_in = 8'b00000001;  // start = 1
+      #10;
+      uio_in = 8'b00000000;
 
-        // Wait for operation to finish (4 cycles)
-        #200;
+      #300;  // wait time
 
-        $display("Test1: a=3, b=4 => op = %d", uo_out);
-        if (uo_out !== 8'd12)
-            $display("FAIL: Expected 12, got %d", uo_out);
-        else
-            $display("PASS");
-
-        // Add more test cases if needed...
-
-        #100;
-        $finish;
+      $display("Test1: a=%0d, b=%0d => op = %0d", a, b, uo_out);
+      if (uo_out !== expected) begin
+        $display("FAIL: Expected %0d, got %0d", expected, uo_out);
+      end else begin
+        $display("PASS: a=%0d * b=%0d = %0d", a, b, uo_out);
+      end
     end
+  endtask
 
 endmodule
+
+
