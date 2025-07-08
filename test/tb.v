@@ -13,26 +13,49 @@ module tb ();
     #1;
   end
 
-  // Wire up the inputs and outputs:
+  // Inputs and outputs exactly as in your main module
   reg clk;
-  reg rst_n;
-  reg ena;
-  reg [7:0] ui_in;
-  reg [7:0] uio_in;
-  wire [7:0] uo_out;
-  wire [7:0] uio_out;
-  wire [7:0] uio_oe;
+  reg start;
+  reg [3:0] a, b;
+  wire [7:0] op;
 
-  // Replace tt_um_example with your module name:
-  tt_um_example user_project (
-      .ui_in  (ui_in),    // Dedicated inputs
-      .uo_out (uo_out),   // Dedicated outputs
-      .uio_in (uio_in),   // IOs: Input path
-      .uio_out(uio_out),  // IOs: Output path
-      .uio_oe (uio_oe),   // IOs: Enable path (active high: 0=input, 1=output)
-      .ena    (ena),      // enable - goes high when design is selected
-      .clk    (clk),      // clock
-      .rst_n  (rst_n)     // not reset
+  // Instantiate the multiplier module
+  seq_mul uut (
+    .clk(clk),
+    .start(start),
+    .a(a),
+    .b(b),
+    .op(op)
   );
 
+  // Clock generation
+  initial clk = 0;
+  always #5 clk = ~clk; // 10ns period
+
+  // Stimulus
+  initial begin
+    // Initialize
+    start = 0;
+    a = 4'd0;
+    b = 4'd0;
+
+    // Test case 1: 3 × 5 = 15
+    #10 a = 4'd3; b = 4'd5; start = 1;
+    #10 start = 0;
+    #60;
+
+    // Test case 2: 9 × 2 = 18
+    a = 4'd9; b = 4'd2; start = 1;
+    #10 start = 0;
+    #60;
+
+    // Test case 3: 7 × 7 = 49
+    a = 4'd7; b = 4'd7; start = 1;
+    #10 start = 0;
+    #60;
+
+    $finish;
+  end
+
 endmodule
+
