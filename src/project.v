@@ -5,9 +5,13 @@
 
 `default_nettype none
 
+// SPDX-FileCopyrightText: © 2024 Tiny Tapeout
+// SPDX-License-Identifier: Apache-2.0
+
+// Top-level module: connects the user logic to Tiny Tapeout standard interface
 module tt_um_seq_mul (
     input  [7:0] ui_in,     // ui_in[3:0] = a, ui_in[7:4] = b
-    output [7:0] uo_out,    // op[7:0]
+    output [7:0] uo_out,    // output: op[7:0]
     input  [7:0] uio_in,    // uio_in[0] = start
     output [7:0] uio_out,   // unused
     output [7:0] uio_oe,    // unused
@@ -21,7 +25,6 @@ module tt_um_seq_mul (
     wire [3:0] a = ui_in[3:0];
     wire [3:0] b = ui_in[7:4];
     wire       start = uio_in[0];
-
     wire [7:0] op;
 
     seq_mul dut (
@@ -36,9 +39,7 @@ module tt_um_seq_mul (
 
 endmodule
 
-// Main sequential multiplier
-top-level module: seq_mul.v
-
+// Sequential multiplier main module
 module seq_mul(clk, start, a, b, op);
     input [3:0] a, b;
     input clk, start;
@@ -58,9 +59,7 @@ module seq_mul(clk, start, a, b, op);
     assign t[3] = a1[3] & p[0];
 
     adder_4bit ad(p[8:5], t, c, cy);
-
     Regbank_4bit rg2(clk, start, ld, cy, c, b, p);
-
     cnt4 cnt(out, 2'b00, load, en, clk, tc, 2'b11);
     pg pg1(start, tc, en, clk, 1'b0);
 
@@ -69,6 +68,7 @@ module seq_mul(clk, start, a, b, op);
     assign op = p[8:1];
 endmodule
 
+// Register for holding a
 module reg4(y, clk, en, a);
     input [3:0] a;
     output [3:0] y;
@@ -80,6 +80,7 @@ module reg4(y, clk, en, a);
     fdce d4(y[3], clk, en, a[3]);
 endmodule
 
+// Flip-flop with clock enable
 module fdce(q, clk, ce, d);
     input d, clk, ce;
     output reg q;
@@ -90,11 +91,11 @@ module fdce(q, clk, ce, d);
     end
 endmodule
 
+// 4-bit adder using full adders
 module adder_4bit(a, b, sum, cy);
     input [3:0] a, b;
     output [3:0] sum;
     output cy;
-
     wire co1, co2, co3;
 
     fa m1(a[0], b[0], 1'b0, sum[0], co1);
@@ -103,20 +104,24 @@ module adder_4bit(a, b, sum, cy);
     fa m4(a[3], b[3], co3, sum[3], cy);
 endmodule
 
+// Full adder
 module fa(a, b, cin, sum, co);
     input a, b, cin;
     output sum, co;
     wire t1, t2, t4;
+
     ha X1(a, b, t1, t2);
     ha X2(cin, t1, sum, t4);
     assign co = t2 | t4;
 endmodule
 
+// Half adder
 module ha(input a, b, output sum, co);
     assign sum = a ^ b;
     assign co = a & b;
 endmodule
 
+// Register bank for intermediate and final result (p)
 module Regbank_4bit(clk, start, ld, cy, c, b, p);
     input [3:0] c, b;
     output [8:0] p;
@@ -124,7 +129,6 @@ module Regbank_4bit(clk, start, ld, cy, c, b, p);
     wire en2;
 
     fdce f1(p[8], clk, ld, cy);
-
     fdce d1(p[7], clk, ld, c[3]);
     fdce d2(p[6], clk, ld, c[2]);
     fdce d3(p[5], clk, ld, c[1]);
@@ -138,6 +142,7 @@ module Regbank_4bit(clk, start, ld, cy, c, b, p);
     assign en2 = start | ld;
 endmodule
 
+// Mux-controlled register
 module mux_reg(clk, a, b, s, en, z);
     input clk, a, b, s, en;
     output z;
@@ -147,12 +152,14 @@ module mux_reg(clk, a, b, s, en, z);
     fdce m2(z, clk, en, y);
 endmodule
 
+// 2-to-1 mux
 module mux(A, B, S, Y);
     input A, B, S;
     output Y;
     assign Y = (S) ? B : A;
 endmodule
 
+// 2-bit counter
 module cnt4(out, data, load, en, clk, tc, lmt);
     output [1:0] out;
     output reg tc;
@@ -171,6 +178,7 @@ module cnt4(out, data, load, en, clk, tc, lmt);
         tc <= (out == lmt);
 endmodule
 
+// Pulse generator using mux and flip-flop
 module pg(start, tc, q, clk, reset);
     input start, tc, clk, reset;
     output q;
@@ -183,11 +191,12 @@ module pg(start, tc, q, clk, reset);
     DFF d2(t2, clk, reset, t1);
 endmodule
 
+// D flip-flop
 module DFF(q, clk, reset, d);
     input d, clk, reset;
     output reg q;
     initial begin q = 0; end
-    always @ (posedge clk) begin
+    always @(posedge clk) begin
         if (reset)
             q <= 0;
         else
